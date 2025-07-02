@@ -1210,8 +1210,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             aiChatView.style.display = 'flex';
         } else {
-            btnText.textContent = '使用 AI';
-            btnIcon.className = 'fas fa-lightbulb';
+            btnText.textContent = '使用 AI 生成 JSON';
+            btnIcon.className = 'fas fa-flask';
             settingsView.style.display = 'grid';
             aiChatView.style.display = 'none';
         }
@@ -1458,7 +1458,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!userInput) return;
 
         if (!aiState.isAIModeOn) {
-            showAiToast('请先点击 "使用 AI" 按钮开启 AI 模式');
+            showAiToast('请先点击 "使用 AI 生成 JSON" 按钮开启 AI 模式');
             return;
         }
 
