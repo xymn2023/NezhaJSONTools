@@ -412,8 +412,14 @@ function updateBilling() {
 // 获取周期显示名称
 function getCycleDisplayName(cycle) {
     const isEnglish = document.getElementById('cycleLanguage').checked;
+    
+    // 添加安全检查
+    if (!i18n[state.language]) {
+        return cycle;
+    }
+    
     const dict = isEnglish ? i18n[state.language].cyclesEn : i18n[state.language].cycles;
-    return dict[cycle] || cycle;
+    return dict ? (dict[cycle] || cycle) : cycle;
 }
 
 // 获取周期值
@@ -424,7 +430,11 @@ function getCycleValue() {
     if (isEnglish) {
         return cycle;
     } else {
-        return i18n[state.language].cycles[cycle] || cycle;
+        // 添加安全检查
+        if (i18n[state.language] && i18n[state.language].cycles) {
+            return i18n[state.language].cycles[cycle] || cycle;
+        }
+        return cycle;
     }
 }
 
@@ -432,7 +442,17 @@ function getCycleValue() {
 function updateCycleOptions() {
     const select = document.getElementById('cycle');
     const isEnglish = document.getElementById('cycleLanguage').checked;
+    
+    // 添加安全检查
+    if (!i18n[state.language]) {
+        return;
+    }
+    
     const dict = isEnglish ? i18n[state.language].cyclesEn : i18n[state.language].cycles;
+    
+    if (!dict) {
+        return;
+    }
     
     Array.from(select.options).forEach(option => {
         const key = option.value;
@@ -1017,10 +1037,559 @@ function showToast(message) {
     }, 3000);
 }
 
+// 独立的 AI Toast 函数
+function showAiToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 500);
+        }, 3000);
+    }, 100);
+}
+
 // 点击模态框外部关闭
 window.onclick = function(event) {
     const modal = document.getElementById('warningModal');
     if (event.target === modal) {
         modal.style.display = 'none';
     }
-} 
+}
+
+// =======================================================================
+// AI Chat Functionality
+// =======================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    // 防止重复初始化
+    if (document.body.classList.contains('ai-chat-initialized')) return;
+    document.body.classList.add('ai-chat-initialized');
+
+    const aiState = {
+        isAIModeOn: false,
+        apiKey: 'sk-XtE32K91J0evJQspTbFYg5153rT6xUN4mBPaexFwXvB6uRP3',
+        apiBaseUrl: 'https://api.breathai.top/v1/chat/completions',
+        model: 'qwen3-14b',
+        messages: [
+            {
+                role: 'system',
+                content: `你是 NezhaJsonTools 的AI助手，专门帮助用户生成和配置 Nezha 监控系统的 JSON 配置文件。
+
+## 核心原则
+当用户的需求不够明确时，你需要主动询问所需的具体信息，而不是猜测或提供通用示例。
+
+## 配置结构说明
+
+### 账单配置 (billingDataMod)
+- **startDate**: 计费起始日期 (ISO 8601格式)
+- **endDate**: 计费结束日期 (ISO 8601格式) 
+- **autoRenewal**: 自动续费 ("1"=开启, "0"=关闭)
+- **cycle**: 计费周期 (Day/Week/Month/Quarter/HalfYear/Year/2Year/3Year/4Year/5Year/Permanent)
+- **amount**: 金额 (格式: "200EUR", "50USD", 免费用"0", 按量收费用"-1")
+
+### 套餐配置 (planDataMod)
+- **bandwidth**: 带宽 ("30Mbps", "1Gbps", "Unlimited")
+- **trafficVol**: 流量配额 ("1TB/Month", "500GB/Day", "Unlimited")
+- **trafficType**: 流量类型 ("1"=入站, "2"=双向)
+- **IPv4**: IPv4地址数量 (数字)
+- **IPv6**: IPv6地址数量 (数字)
+- **networkRoute**: AS号码 (如 "4837")
+- **extra**: 额外标签/备注信息
+
+## 交互指南
+**当用户请求不明确时，你应该这样询问：**
+
+🔍 **如果用户只说"帮我生成配置"：**
+请告诉我：
+1. 计费信息：价格多少？什么货币？什么周期？
+2. 套餐信息：带宽多少？流量配额多少？
+3. 其他需求：需要几个IP？有特殊标签吗？
+
+🔍 **如果用户只说"我要一个VPS配置"：**
+请提供以下信息：
+- 价格和计费周期（如：年付200欧元）
+- 带宽要求（如：30Mbps）
+- 流量配额（如：每月1TB）
+- 是否需要自动续费？
+
+🔍 **如果用户说"便宜的配置"：**
+请具体说明：
+- 你的预算范围？
+- 需要什么规格（带宽、流量）？
+- 偏好什么计费周期？
+
+## 输出格式
+确认所有信息后，使用以下格式输出：
+
+\`\`\`json
+{
+  "billingDataMod": {
+    "startDate": "2024-12-08T12:58:17.636Z",
+    "endDate": "2025-12-08T12:58:17.636Z",
+    "autoRenewal": "1",
+    "cycle": "Year", 
+    "amount": "200EUR"
+  },
+  "planDataMod": {
+    "bandwidth": "30Mbps",
+    "trafficVol": "1TB/Month",
+    "trafficType": "2",
+    "IPv4": "1", 
+    "IPv6": "1",
+    "networkRoute": "4837",
+    "extra": "Einstein"
+  }
+}
+\`\`\`
+
+## 重要提醒
+- 非官方周期 (Day/Week/2Year-5Year/Permanent) 可能影响报表统计
+- 支持货币: CNY/USD/EUR/GBP，格式如 "200EUR" 或 "50USD"
+- 日期必须是 ISO 8601 格式
+- 流量单位: MB/GB/TB/PB
+- 始终确保JSON格式完整有效
+
+记住：**宁可多问一句，也不要猜测用户需求！**`
+            }
+        ], // 存储对话历史
+        currentStreamController: null,
+        timerInterval: null,
+        // 高级参数
+        temperature: 0.6,
+        top_p: 0.95,
+        top_k: 20,
+        min_p: 0.00,
+        frequency_penalty: 0.0
+    };
+
+    const aiModeBtn = document.getElementById('aiModeBtn');
+    const sendMessageBtn = document.getElementById('sendMessageBtn');
+    const chatInput = document.getElementById('chatInput');
+    const clearContextBtn = document.getElementById('clearContextBtn');
+    const chatBox = document.getElementById('chatBox');
+    const aiCloseBtn = document.getElementById('aiCloseBtn');
+    const mobileCloseBtn = document.getElementById('mobileCloseBtn');
+    const minimizeBtn = document.getElementById('minimizeBtn');
+    const aiChatHeader = document.getElementById('aiChatHeader');
+    
+    // Main view containers
+    const settingsView = document.getElementById('settings-view');
+    const aiChatView = document.getElementById('ai-chat-view');
+    const aiChatPanel = aiChatView.querySelector('.ai-chat-panel');
+    
+    // 窗口状态
+    let isMinimized = false;
+    let isDragging = false;
+    let dragOffset = { x: 0, y: 0 };
+
+    // 切换AI模式
+    function toggleAIMode(force = null) {
+        if (force !== null) {
+            aiState.isAIModeOn = force;
+        } else {
+            aiState.isAIModeOn = !aiState.isAIModeOn;
+        }
+        
+        aiModeBtn.classList.toggle('ai-mode-on', aiState.isAIModeOn);
+        const btnText = aiModeBtn.querySelector('span');
+        const btnIcon = aiModeBtn.querySelector('i');
+
+        if (aiState.isAIModeOn) {
+            btnText.textContent = '退出 AI';
+            btnIcon.className = 'fas fa-power-off';
+            
+            // 只在移动端隐藏设置界面
+            if (window.innerWidth <= 768) {
+                settingsView.style.display = 'none';
+            }
+            aiChatView.style.display = 'flex';
+        } else {
+            btnText.textContent = '使用 AI';
+            btnIcon.className = 'fas fa-lightbulb';
+            settingsView.style.display = 'grid';
+            aiChatView.style.display = 'none';
+        }
+    }
+
+    aiModeBtn.addEventListener('click', () => toggleAIMode());
+    aiCloseBtn.addEventListener('click', () => toggleAIMode(false));
+    mobileCloseBtn.addEventListener('click', () => toggleAIMode(false));
+    
+    // 窗口控制功能
+    minimizeBtn.addEventListener('click', () => {
+        isMinimized = !isMinimized;
+        aiChatPanel.classList.toggle('minimized', isMinimized);
+        minimizeBtn.querySelector('i').className = isMinimized ? 'fas fa-window-restore' : 'fas fa-minus';
+        minimizeBtn.title = isMinimized ? '还原' : '最小化';
+    });
+    
+    // 拖拽功能 (仅桌面端)
+    if (window.innerWidth > 768) {
+        aiChatHeader.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.window-controls')) return; // 点击按钮时不拖拽
+            if (e.target.closest('.mobile-controls')) return; // 点击移动端按钮时不拖拽
+            
+            isDragging = true;
+            const rect = aiChatPanel.getBoundingClientRect();
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            
+            aiChatHeader.style.cursor = 'grabbing';
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const newX = e.clientX - dragOffset.x;
+            const newY = e.clientY - dragOffset.y;
+            
+            // 限制窗口在视窗内
+            const maxX = window.innerWidth - aiChatPanel.offsetWidth;
+            const maxY = window.innerHeight - aiChatPanel.offsetHeight;
+            
+            const clampedX = Math.max(0, Math.min(newX, maxX));
+            const clampedY = Math.max(0, Math.min(newY, maxY));
+            
+            aiChatPanel.style.left = clampedX + 'px';
+            aiChatPanel.style.top = clampedY + 'px';
+            aiChatPanel.style.transform = 'none';
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                aiChatHeader.style.cursor = 'move';
+            }
+        });
+    }
+
+    // 发送消息
+    sendMessageBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    
+    // 清除上下文
+    clearContextBtn.addEventListener('click', clearChat);
+
+    function clearChat() {
+        chatBox.innerHTML = '';
+        // 保留系统提示词，只清除用户对话
+        aiState.messages = aiState.messages.filter(msg => msg.role === 'system');
+        showAiToast('上下文已清除');
+    }
+
+    function addMessageToChatBox(sender, message) {
+        const bubble = document.createElement('div');
+        bubble.classList.add('chat-bubble', sender === 'user' ? 'user-bubble' : 'ai-bubble');
+
+        const avatar = document.createElement('div');
+        avatar.classList.add('avatar');
+        avatar.innerHTML = `<i class="fas ${sender === 'user' ? 'fa-user' : 'fa-robot'}"></i>`;
+
+        const messageContent = document.createElement('div');
+        messageContent.classList.add('message-content');
+        
+        if (sender === 'ai') {
+            // AI消息需要解析代码块
+            if (message === 'AI 正在思考...') {
+                // 对于思考状态，直接添加文本
+                const textElement = document.createElement('p');
+                textElement.innerText = message;
+                messageContent.appendChild(textElement);
+            } else {
+                // 对于正常AI回复，解析代码块
+                const processedContent = parseCodeBlocks(message);
+                messageContent.innerHTML = processedContent;
+            }
+        } else {
+            // 用户消息直接显示
+            const textElement = document.createElement('p');
+            textElement.innerText = message;
+            messageContent.appendChild(textElement);
+        }
+        
+        bubble.appendChild(avatar);
+        bubble.appendChild(messageContent);
+        
+        if (sender === 'ai') {
+            const timerElement = document.createElement('div');
+            timerElement.classList.add('timer');
+            timerElement.textContent = '0.0s';
+            messageContent.appendChild(timerElement);
+            bubble.dataset.startTime = Date.now(); // 记录开始时间
+            bubble.timerElement = timerElement; // 方便后面更新
+        }
+        
+        chatBox.appendChild(bubble);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        return bubble;
+    }
+
+    function parseCodeBlocks(text) {
+        // 匹配完整代码块的正则表达式
+        const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
+        
+        let result = text;
+        let match;
+        
+        while ((match = codeBlockRegex.exec(text)) !== null) {
+            const language = match[1] || '';
+            const code = match[2].trim();
+            const fullMatch = match[0];
+            
+            // 创建代码块HTML
+            const codeBlockId = 'code-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            const codeBlockHTML = `
+                <div class="ai-code-block">
+                    <pre class="code-content" id="${codeBlockId}" data-language="${language}"><code>${escapeHtml(code)}</code></pre>
+                </div>
+            `;
+            
+            result = result.replace(fullMatch, codeBlockHTML);
+        }
+        
+        // 将普通文本的换行转换为<br>
+        result = result.replace(/\n/g, '<br>');
+        
+        return result;
+    }
+
+    function parseCodeBlocksRealtime(text) {
+        let result = text;
+        
+        // 处理完整的代码块
+        const completeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
+        let match;
+        
+        while ((match = completeBlockRegex.exec(text)) !== null) {
+            const language = match[1] || '';
+            const code = match[2].trim();
+            const fullMatch = match[0];
+            
+            const codeBlockId = 'code-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            const codeBlockHTML = `
+                <div class="ai-code-block">
+                    <pre class="code-content" id="${codeBlockId}" data-language="${language}"><code>${escapeHtml(code)}</code></pre>
+                </div>
+            `;
+            
+            result = result.replace(fullMatch, codeBlockHTML);
+        }
+        
+        // 处理未完成的代码块（只有开始标记```）
+        const incompleteBlockRegex = /```(\w+)?\n?([\s\S]*)$/;
+        const incompleteMatch = result.match(incompleteBlockRegex);
+        
+        if (incompleteMatch && !result.includes('```', incompleteMatch.index + 3)) {
+            const language = incompleteMatch[1] || '';
+            const code = incompleteMatch[2];
+            const fullMatch = incompleteMatch[0];
+            
+            const codeBlockId = 'code-incomplete-' + Date.now();
+            const codeBlockHTML = `
+                <div class="ai-code-block incomplete">
+                    <pre class="code-content" id="${codeBlockId}" data-language="${language}"><code>${escapeHtml(code)}</code></pre>
+                </div>
+            `;
+            
+            result = result.replace(fullMatch, codeBlockHTML);
+        }
+        
+        // 将普通文本的换行转换为<br>
+        result = result.replace(/\n/g, '<br>');
+        
+        return result;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // 全局函数：复制代码块
+    window.copyCodeBlock = function(codeBlockId) {
+        const codeElement = document.getElementById(codeBlockId);
+        if (codeElement) {
+            const code = codeElement.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                showAiToast('代码已复制到剪贴板');
+            }).catch(() => {
+                showAiToast('复制失败，请手动复制');
+            });
+        }
+    };
+
+    // 处理代码块复制按钮点击事件
+    document.addEventListener('click', function(e) {
+        const codeContent = e.target.closest('.code-content');
+        if (codeContent) {
+            const rect = codeContent.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 检查是否点击在右上角复制按钮区域（40x40 像素区域）
+            if (x > rect.width - 40 && y < 40) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const code = codeContent.querySelector('code').textContent;
+                navigator.clipboard.writeText(code).then(() => {
+                    showAiToast('代码已复制到剪贴板');
+                }).catch(() => {
+                    showAiToast('复制失败，请手动复制');
+                });
+            }
+        }
+    });
+
+    async function sendMessage() {
+        const userInput = chatInput.value.trim();
+        if (!userInput) return;
+
+        if (!aiState.isAIModeOn) {
+            showAiToast('请先点击 "使用 AI" 按钮开启 AI 模式');
+            return;
+        }
+
+        addMessageToChatBox('user', userInput);
+        aiState.messages.push({ role: 'user', content: userInput + '/no_think' });
+        chatInput.value = '';
+        chatInput.focus();
+
+        // 显示 "AI 正在思考..."
+        const thinkingBubble = addMessageToChatBox('ai', 'AI 正在思考...');
+        const thinkingText = thinkingBubble.querySelector('p');
+        thinkingText.classList.add('thinking-indicator');
+        
+        // 立即开始计时
+        startTimer(thinkingBubble);
+
+        try {
+            const response = await fetch(aiState.apiBaseUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${aiState.apiKey}`
+                },
+                body: JSON.stringify({
+                    model: aiState.model,
+                    messages: aiState.messages,
+                    stream: true,
+                    temperature: aiState.temperature,
+                    top_p: aiState.top_p,
+                    top_k: aiState.top_k,
+                    min_p: aiState.min_p,
+                    frequency_penalty: aiState.frequency_penalty
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error.message || `HTTP error! status: ${response.status}`);
+            }
+
+            // 处理流式响应
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let aiResponseText = '';
+            let isFirstChunk = true;
+
+            // 计时器已经在发送消息时启动了
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    stopTimer();
+                    break;
+                }
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const dataStr = line.substring(6).trim();
+                        if (dataStr === '[DONE]') {
+                            stopTimer();
+                            if (aiResponseText) {
+                                const finalCleanedText = aiResponseText.replace(/^\s*\n+/, '').replace(/\n{3,}/g, '\n\n');
+                                aiState.messages.push({ role: 'assistant', content: finalCleanedText });
+                            }
+                            return;
+                        }
+                        try {
+                            const data = JSON.parse(dataStr);
+                            if (data.choices && data.choices[0].delta && data.choices[0].delta.content) {
+                                const content = data.choices[0].delta.content;
+                                if (isFirstChunk) {
+                                    // 移除 "正在思考"
+                                    const messageContentDiv = thinkingBubble.querySelector('.message-content');
+                                    // 清空内容但保留计时器
+                                    const timer = messageContentDiv.querySelector('.timer');
+                                    messageContentDiv.innerHTML = '';
+                                    if (timer) messageContentDiv.appendChild(timer);
+                                    isFirstChunk = false;
+                                }
+                                aiResponseText += content;
+                                // 移除开头的空行和多余的换行符
+                                const cleanedText = aiResponseText.replace(/^\s*\n+/, '').replace(/\n{3,}/g, '\n\n');
+                                
+                                // 更新消息内容，实时解析代码块
+                                const messageContentDiv = thinkingBubble.querySelector('.message-content');
+                                const timer = messageContentDiv.querySelector('.timer');
+                                const processedContent = parseCodeBlocksRealtime(cleanedText);
+                                messageContentDiv.innerHTML = processedContent;
+                                if (timer) messageContentDiv.appendChild(timer);
+                                
+                                chatBox.scrollTop = chatBox.scrollHeight;
+                            }
+                        } catch (e) {
+                            // 忽略JSON解析错误，因为流式传输可能包含不完整的JSON对象
+                            console.log('JSON parse error (expected):', e);
+                        }
+                    }
+                }
+            }
+
+        } catch (error) {
+            console.error('Error fetching AI response:', error);
+            const messageContentDiv = thinkingBubble.querySelector('.message-content');
+            const timer = messageContentDiv.querySelector('.timer');
+            messageContentDiv.innerHTML = `<p style="color: var(--danger-color);">出错了: ${error.message}</p>`;
+            if (timer) messageContentDiv.appendChild(timer);
+            stopTimer();
+        }
+    }
+    
+    function startTimer(bubble) {
+        const startTime = bubble.dataset.startTime;
+        const timerElement = bubble.timerElement;
+        
+        if (aiState.timerInterval) {
+            clearInterval(aiState.timerInterval);
+        }
+
+        aiState.timerInterval = setInterval(() => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            timerElement.textContent = `${elapsed.toFixed(1)}s`;
+        }, 100);
+    }
+
+    function stopTimer() {
+        if (aiState.timerInterval) {
+            clearInterval(aiState.timerInterval);
+            aiState.timerInterval = null;
+        }
+    }
+}); 
