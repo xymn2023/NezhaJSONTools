@@ -1073,7 +1073,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const aiState = {
         isAIModeOn: false,
-        apiKey: 'sk-XtE32K91J0evJQspTbFYg5153rT6xUN4mBPaexFwXvB6uRP3',
+        apiKey: '3sk-8jpAzlLIrs0bJTXkmfABSIIS01FV51hMovUCjKaalS1EIhi2',
         apiBaseUrl: 'https://api.breathai.top/v1/chat/completions',
         model: 'qwen3-14b',
         messages: [
