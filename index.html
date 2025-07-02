@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NezhaJsonTools</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-server"></i> NezhaJsonTools</h1>
+            <div class="header-controls">
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <button class="language-toggle" onclick="toggleLanguage()">
+                    <span id="lang-indicator">English</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="settings-panel">
+                <div class="form-section">
+                    <div class="section-header" onclick="toggleCardCollapse(this)">
+                        <h3 class="section-title">
+                            <i class="fas fa-credit-card"></i>
+                            <span data-key="billingConfig">账单配置</span>
+                        </h3>
+                        <div class="section-controls">
+                            <label class="toggle-switch" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="enableBilling" checked onchange="toggleSection('billing')">
+                                <span class="slider"></span>
+                            </label>
+                            <button class="collapse-btn" type="button"><i class="fas fa-chevron-up"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-content" id="billingForm">
+                        <div class="form-group">
+                            <label data-key="startDate">起始日期</label>
+                            <input type="datetime-local" id="startDate" onchange="updateBilling()">
+                        </div>
+
+                        <div class="form-group">
+                            <label data-key="endDate">结束日期</label>
+                            <div class="input-group">
+                                <input type="datetime-local" id="endDate" onchange="updateBilling()">
+                                <button class="auto-calc-btn" id="autoCalcBtn" onclick="triggerAutoCalculation()">
+                                    <i class="fas fa-calculator"></i>
+                                    <span data-key="autoCalc">自动计算</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label data-key="autoRenewal">自动续费</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="autoRenewal" checked onchange="updateBilling()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label data-key="billingCycle">计费周期</label>
+                            <div class="input-group">
+                                <select id="cycle" onchange="updateBilling()">
+                                    <option value="Day">天（非官方）</option>
+                                    <option value="Week">周（非官方）</option>
+                                    <option value="Month">月</option>
+                                    <option value="Quarter">季</option>
+                                    <option value="HalfYear">半年</option>
+                                    <option value="Year" selected>年</option>
+                                    <option value="2Year">2年（非官方）</option>
+                                    <option value="3Year">3年（非官方）</option>
+                                    <option value="4Year">4年（非官方）</option>
+                                    <option value="5Year">5年（非官方）</option>
+                                    <option value="Permanent">永久（非官方）</option>
+                                </select>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="cycleLanguage" onchange="updateCycleLanguage()">
+                                    <span class="slider mini"></span>
+                                </label>
+                                <span class="toggle-label" data-key="english">英文</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label data-key="amount">金额</label>
+                            <div class="amount-controls">
+                                <select id="amountType" onchange="updateAmountType()">
+                                    <option value="billing" data-key="billing">计费</option>
+                                    <option value="free" data-key="free">免费</option>
+                                    <option value="payAsGo" data-key="payAsGo">按量收费</option>
+                                </select>
+                                <div id="amountInputs">
+                                    <input type="number" id="amountValue" value="200" onchange="updateBilling()">
+                                    <select id="currency" onchange="updateBilling()">
+                                        <option value="CNY">CNY</option>
+                                        <option value="USD">USD</option>
+                                        <option value="EUR" selected>EUR</option>
+                                        <option value="GBP">GBP</option>
+                                    </select>
+                                    <select id="currencyFormat" onchange="updateBilling()">
+                                        <option value="before">12EUR</option>
+                                        <option value="symbol_before">€12</option>
+                                        <option value="after">12€</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-header" onclick="toggleCardCollapse(this)">
+                        <h3 class="section-title">
+                            <i class="fas fa-network-wired"></i>
+                            <span data-key="planConfig">套餐配置</span>
+                        </h3>
+                        <div class="section-controls">
+                            <label class="toggle-switch" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="enablePlan" checked onchange="toggleSection('plan')">
+                                <span class="slider"></span>
+                            </label>
+                            <button class="collapse-btn" type="button"><i class="fas fa-chevron-up"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-content" id="planForm">
+                        <div class="form-group">
+                            <label data-key="bandwidth">带宽</label>
+                            <div class="input-group">
+                                <input type="number" id="bandwidthValue" value="30" onchange="updatePlan()">
+                                <select id="bandwidthUnit" onchange="updateBandwidthUnit()">
+                                    <option value="Mbps" selected>Mbps</option>
+                                    <option value="Gbps">Gbps</option>
+                                    <option value="Unlimited" data-key="unlimited">无限制</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label data-key="trafficVolume">流量配额</label>
+                            <div class="traffic-controls">
+                                <div class="input-group">
+                                    <input type="number" id="trafficValue" value="1" onchange="updatePlan()">
+                                    <select id="trafficUnit" onchange="updateTrafficUnit()">
+                                        <option value="MB">MB</option>
+                                        <option value="GB">GB</option>
+                                        <option value="TB" selected>TB</option>
+                                        <option value="PB">PB</option>
+                                        <option value="Unlimited" data-key="unlimited">无限</option>
+                                    </select>
+                                </div>
+                                <span>/</span>
+                                <select id="trafficPeriod" onchange="updatePlan()">
+                                    <option value="Day" data-key="day">天</option>
+                                    <option value="Month" selected data-key="month">月</option>
+                                    <option value="Quarter" data-key="quarter">季</option>
+                                    <option value="Year" data-key="year">年</option>
+                                    <option value="Unlimited" data-key="unlimited">无限</option>
+                                </select>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="trafficLanguage" onchange="updateTrafficLanguage()">
+                                    <span class="slider mini"></span>
+                                </label>
+                                <span class="toggle-label" data-key="english">英文</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label data-key="trafficType">流量类型</label>
+                            <select id="trafficType" onchange="updatePlan()">
+                                <option value="1" data-key="inbound">入站</option>
+                                <option value="2" selected data-key="bidirectional">双向</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>IPv4</label>
+                            <input type="number" id="ipv4" value="1" onchange="updatePlan()">
+                        </div>
+
+                        <div class="form-group">
+                            <label>IPv6</label>
+                            <input type="number" id="ipv6" value="1" onchange="updatePlan()">
+                        </div>
+
+                        <div class="form-group">
+                            <label data-key="networkRoute">网络路由</label>
+                            <input type="text" id="networkRoute" value="4837" onchange="updatePlan()">
+                        </div>
+
+                        <div class="form-group">
+                            <label data-key="extraTags">额外标签</label>
+                            <div class="tags-container">
+                                <div class="tags" id="tagsContainer">
+                                    <div class="tag">
+                                        <span>Einstein</span>
+                                        <button onclick="removeTag(this)"><i class="fas fa-times"></i></button>
+                                    </div>
+                                </div>
+                                <div class="tag-input">
+                                    <input type="text" id="newTag" placeholder="添加标签..." onkeypress="handleTagInput(event)">
+                                    <button onclick="addTag()"><i class="fas fa-plus"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-panel">
+                <div class="panel-header" onclick="toggleCardCollapse(this)">
+                    <h3><i class="fas fa-code"></i> <span data-key="jsonConfig">JSON 配置</span></h3>
+                    <div class="panel-controls-group">
+                        <div class="panel-controls" onclick="event.stopPropagation()">
+                            <button class="refresh-btn" onclick="refreshFromCode(event)">
+                                <i class="fas fa-sync-alt"></i>
+                                <span data-key="refresh">刷新</span>
+                            </button>
+                            <button class="copy-btn" onclick="copyCode(event)">
+                                <i class="fas fa-copy"></i>
+                                <span data-key="copy">复制</span>
+                            </button>
+                        </div>
+                        <button class="collapse-btn" type="button"><i class="fas fa-chevron-up"></i></button>
+                    </div>
+                </div>
+                <div class="code-container">
+                    <textarea id="jsonCode" spellcheck="false" onchange="handleCodeChange()"></textarea>
+                </div>
+            </div>
+        </div
+    </div>
+
+    <!-- 警告模态框 -->
+    <div id="warningModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4><i class="fas fa-exclamation-triangle"></i> <span data-key="warning">警告</span></h4>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="warningMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal()" data-key="understand">我知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 复制成功提示 -->
+    <div id="copyToast" class="toast">
+        <i class="fas fa-check"></i>
+        <span data-key="copySuccess">复制成功！</span>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
