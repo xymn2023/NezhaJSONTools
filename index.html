@@ -100,17 +100,17 @@
                                     <option value="payAsGo" data-key="payAsGo">按量收费</option>
                                 </select>
                                 <div id="amountInputs">
-                                    <input type="number" id="amountValue" value="200" onchange="updateBilling()">
+                                    <input type="number" id="amountValue" value="50" onchange="updateBilling()">
                                     <select id="currency" onchange="updateBilling()">
-                                        <option value="CNY">CNY</option>
+                                        <option value="CNY" selected>CNY</option>
                                         <option value="USD">USD</option>
-                                        <option value="EUR" selected>EUR</option>
+                                        <option value="EUR">EUR</option>
                                         <option value="GBP">GBP</option>
                                     </select>
                                     <select id="currencyFormat" onchange="updateBilling()">
-                                        <option value="before">12EUR</option>
-                                        <option value="symbol_before">€12</option>
-                                        <option value="after">12€</option>
+                                        <option value="before">50CNY</option>
+                                        <option value="symbol_before">¥50</option>
+                                        <option value="after">50¥</option>
                                     </select>
                                 </div>
                             </div>
@@ -137,7 +137,7 @@
                         <div class="form-group">
                             <label data-key="bandwidth">带宽</label>
                             <div class="input-group">
-                                <input type="number" id="bandwidthValue" value="30" onchange="updatePlan()">
+                                <input type="number" id="bandwidthValue" value="500" onchange="updatePlan()">
                                 <select id="bandwidthUnit" onchange="updateBandwidthUnit()">
                                     <option value="Mbps" selected>Mbps</option>
                                     <option value="Gbps">Gbps</option>
@@ -203,7 +203,7 @@
                             <div class="tags-container">
                                 <div class="tags" id="tagsContainer">
                                     <div class="tag">
-                                        <span>Einstein</span>
+                                        <span>LAGSNES</span>
                                         <button onclick="removeTag(this)"><i class="fas fa-times"></i></button>
                                     </div>
                                 </div>

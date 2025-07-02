@@ -1114,6 +1114,11 @@ textarea::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
         resize: none;
     }
     
+    .ai-chat-panel.minimized .chat-box,
+    .ai-chat-panel.minimized .chat-input-area {
+        display: none;
+    }
+    
 
 }
 
