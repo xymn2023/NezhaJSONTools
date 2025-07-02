@@ -1143,7 +1143,7 @@ document.addEventListener('DOMContentLoaded', function() {
     "IPv4": "1", 
     "IPv6": "1",
     "networkRoute": "4837",
-    "extra": "Einstein"
+    "extra": "LAGSNES"
   }
 }
 \`\`\`
@@ -1154,6 +1154,7 @@ document.addEventListener('DOMContentLoaded', function() {
 - 日期必须是 ISO 8601 格式
 - 流量单位: MB/GB/TB/PB
 - 始终确保JSON格式完整有效
+- 如果服务器是永久的（cycle为Permanent），endDate应设置为0000-00-00T23:59:59+08:00
 
 记住：**宁可多问一句，也不要猜测用户需求！**`
             }
@@ -1175,7 +1176,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatBox = document.getElementById('chatBox');
     const aiCloseBtn = document.getElementById('aiCloseBtn');
     const mobileCloseBtn = document.getElementById('mobileCloseBtn');
-    const minimizeBtn = document.getElementById('minimizeBtn');
+
     const aiChatHeader = document.getElementById('aiChatHeader');
     
     // Main view containers
@@ -1184,7 +1185,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const aiChatPanel = aiChatView.querySelector('.ai-chat-panel');
     
     // 窗口状态
-    let isMinimized = false;
     let isDragging = false;
     let dragOffset = { x: 0, y: 0 };
 
@@ -1221,13 +1221,7 @@ document.addEventListener('DOMContentLoaded', function() {
     aiCloseBtn.addEventListener('click', () => toggleAIMode(false));
     mobileCloseBtn.addEventListener('click', () => toggleAIMode(false));
     
-    // 窗口控制功能
-    minimizeBtn.addEventListener('click', () => {
-        isMinimized = !isMinimized;
-        aiChatPanel.classList.toggle('minimized', isMinimized);
-        minimizeBtn.querySelector('i').className = isMinimized ? 'fas fa-window-restore' : 'fas fa-minus';
-        minimizeBtn.title = isMinimized ? '还原' : '最小化';
-    });
+
     
     // 拖拽功能 (仅桌面端)
     if (window.innerWidth > 768) {

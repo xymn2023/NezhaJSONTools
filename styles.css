@@ -1032,10 +1032,7 @@ textarea::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
     justify-content: center;
 }
 
-.minimize-btn:hover {
-    background: var(--warning-color);
-    color: white;
-}
+
 
 .close-btn:hover {
     background: var(--danger-color);
@@ -1108,16 +1105,7 @@ textarea::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
         overflow: hidden;
     }
     
-    .ai-chat-panel.minimized {
-        height: 50px;
-        overflow: hidden;
-        resize: none;
-    }
-    
-    .ai-chat-panel.minimized .chat-box,
-    .ai-chat-panel.minimized .chat-input-area {
-        display: none;
-    }
+
     
 
 }
