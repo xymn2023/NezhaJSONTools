@@ -1102,6 +1102,31 @@ document.addEventListener('DOMContentLoaded', function() {
 - **networkRoute**: AS号码 (如 "4837")
 - **extra**: 额外标签/备注信息
 
+### 流量监控规则 (trafficRules)
+- **type**: transfer_in_cycle / transfer_out_cycle / transfer_all_cycle
+- **cycle_start**: 周期开始时间 (RFC3339)
+- **cycle_interval**: 周期数量
+- **cycle_unit**: hour/day/week/month/year
+- **min** / **max**: 流量阈值
+- **cover**: 1 覆盖, 0 追加
+- **ignore**: 忽略的服务器ID列表
+
+示例:
+\`\`\`json
+[
+  {
+    "type": "transfer_out_cycle",
+    "max": 1099511627776,
+    "cycle_start": "2022-01-01T00:00:00+08:00",
+    "cycle_interval": 1,
+    "cycle_unit": "month",
+    "cover": 1,
+    "ignore": {"3": true, "4": true}
+  }
+]
+\`\`\`
+
+
 ## 交互指南
 **当用户请求不明确时，你应该这样询问：**
 
