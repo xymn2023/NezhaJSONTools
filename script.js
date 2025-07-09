@@ -1181,19 +1181,8 @@ document.addEventListener('DOMContentLoaded', function() {
     "IPv6": "1",
     "networkRoute": "4837",
     "extra": "LAGSNES"
-  }
-}
-\`\`\`
-
-## 重要提醒
-- 非官方周期 (Day/Week/2Year-5Year/Permanent) 可能影响报表统计
-- 支持货币: CNY/USD/EUR/GBP，格式如 "200EUR" 或 "50USD"
-- 日期必须是 ISO 8601 格式
-- 流量单位: MB/GB/TB/PB
-- 始终确保JSON格式完整有效
-- 如果服务器是永久的（cycle为Permanent），endDate应设置为0000-00-00T23:59:59+08:00
-
-记住：**宁可多问一句，也不要猜测用户需求！**`
+    }
+    `
             }
         ], // 存储对话历史
         currentStreamController: null,
