@@ -1253,6 +1253,7 @@ document.addEventListener('DOMContentLoaded', function() {
             aiChatView.style.display = 'none';
         }
     }
+    window.toggleAIMode = toggleAIMode;
 
     aiModeBtn.addEventListener('click', () => toggleAIMode());
     aiCloseBtn.addEventListener('click', () => toggleAIMode(false));
