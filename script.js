@@ -1112,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', function() {
 - **ignore**: 忽略的服务器ID列表
 
 示例:
-```json
+\`\`\`json
 [
   {
     "type": "transfer_out_cycle",
@@ -1124,7 +1124,7 @@ document.addEventListener('DOMContentLoaded', function() {
     "ignore": {"3": true, "4": true}
   }
 ]
-```
+\`\`\`
 
 ### 警报规则 (alertRules)
 - **type**: cpu/gpu/memory/swap/disk/net_in_speed/net_out_speed/net_all_speed/transfer_in/transfer_out/transfer_all/offline/load1/load5/load15/process_count/tcp_conn_count/udp_conn_count/temperature_max
@@ -1134,12 +1134,55 @@ document.addEventListener('DOMContentLoaded', function() {
 - **ignore**: {服务器ID: true/false}
 
 示例:
-```json
+\`\`\`json
 [{"type": "offline", "duration": 10}]
-```
+\`\`\`
+
 
 ## 交互指南
-确认所有信息后，使用标准 JSON 输出，确保格式正确。`
+**当用户请求不明确时，你应该这样询问：**
+
+🔍 **如果用户只说"帮我生成配置"：**
+请告诉我：
+1. 计费信息：价格多少？什么货币？什么周期？
+2. 套餐信息：带宽多少？流量配额多少？
+3. 其他需求：需要几个IP？有特殊标签吗？
+
+🔍 **如果用户只说"我要一个VPS配置"：**
+请提供以下信息：
+- 价格和计费周期（如：年付200欧元）
+- 带宽要求（如：30Mbps）
+- 流量配额（如：每月1TB）
+- 是否需要自动续费？
+
+🔍 **如果用户说"便宜的配置"：**
+请具体说明：
+- 你的预算范围？
+- 需要什么规格（带宽、流量）？
+- 偏好什么计费周期？
+
+## 输出格式
+确认所有信息后，使用以下格式输出：
+
+\`\`\`json
+{
+  "billingDataMod": {
+    "startDate": "2024-12-08T12:58:17.636Z",
+    "endDate": "2025-12-08T12:58:17.636Z",
+    "autoRenewal": "1",
+    "cycle": "Year", 
+    "amount": "200EUR"
+  },
+  "planDataMod": {
+    "bandwidth": "30Mbps",
+    "trafficVol": "1TB/Month",
+    "trafficType": "2",
+    "IPv4": "1", 
+    "IPv6": "1",
+    "networkRoute": "4837",
+    "extra": "LAGSNES"
+    }
+    `
             }
         ], // 存储对话历史
         currentStreamController: null,
@@ -1188,17 +1231,20 @@ document.addEventListener('DOMContentLoaded', function() {
             btnIcon.className = 'fas fa-power-off';
             
             // 只在移动端隐藏设置界面
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 768 && settingsView) {
                 settingsView.style.display = 'none';
             }
             aiChatView.style.display = 'flex';
         } else {
             btnText.textContent = '使用 AI 生成 JSON';
             btnIcon.className = 'fas fa-flask';
-            settingsView.style.display = 'grid';
+            if (settingsView) {
+                settingsView.style.display = 'grid';
+            }
             aiChatView.style.display = 'none';
         }
     }
+    window.toggleAIMode = toggleAIMode;
 
     aiModeBtn.addEventListener('click', () => toggleAIMode());
     aiCloseBtn.addEventListener('click', () => toggleAIMode(false));

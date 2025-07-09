@@ -746,6 +746,11 @@ input:checked + .mini.slider:before {
     .input-group input, .input-group select {
         min-width: auto;
     }
+
+    .header-top {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
     
     .traffic-controls {
         flex-direction: column;
@@ -786,6 +791,11 @@ input:checked + .mini.slider:before {
     
     .header-controls {
         justify-content: center;
+    }
+
+    .header-top {
+        flex-direction: column;
+        gap: 0.5rem;
     }
     
     .section-header {
