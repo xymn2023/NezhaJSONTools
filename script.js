@@ -1242,14 +1242,16 @@ document.addEventListener('DOMContentLoaded', function() {
             btnIcon.className = 'fas fa-power-off';
             
             // 只在移动端隐藏设置界面
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 768 && settingsView) {
                 settingsView.style.display = 'none';
             }
             aiChatView.style.display = 'flex';
         } else {
             btnText.textContent = '使用 AI 生成 JSON';
             btnIcon.className = 'fas fa-flask';
-            settingsView.style.display = 'grid';
+            if (settingsView) {
+                settingsView.style.display = 'grid';
+            }
             aiChatView.style.display = 'none';
         }
     }
