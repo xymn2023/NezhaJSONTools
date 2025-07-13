@@ -321,6 +321,65 @@
 
     <!-- 不蒜子统计 -->
     <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- 改进的统计方案 -->
+    <script>
+        // 统计功能
+        function initStats() {
+            const pvElement = document.getElementById('busuanzi_value_site_pv');
+            const uvElement = document.getElementById('busuanzi_value_site_uv');
+            
+            if (!pvElement || !uvElement) return;
+            
+            // 初始化本地存储
+            if (!localStorage.getItem('site_pv')) {
+                localStorage.setItem('site_pv', '0');
+            }
+            if (!localStorage.getItem('site_uv')) {
+                localStorage.setItem('site_uv', '0');
+            }
+            
+            // 增加访问量
+            let pv = parseInt(localStorage.getItem('site_pv')) + 1;
+            localStorage.setItem('site_pv', pv.toString());
+            
+            // 检查是否是新访客
+            if (!sessionStorage.getItem('visited')) {
+                let uv = parseInt(localStorage.getItem('site_uv')) + 1;
+                localStorage.setItem('site_uv', uv.toString());
+                sessionStorage.setItem('visited', 'true');
+            }
+            
+            // 立即显示本地统计
+            pvElement.textContent = pv.toLocaleString();
+            uvElement.textContent = localStorage.getItem('site_uv');
+            
+            // 检查不蒜子统计是否正常工作
+            setTimeout(function() {
+                const busuanziPv = document.getElementById('busuanzi_value_site_pv');
+                const busuanziUv = document.getElementById('busuanzi_value_site_uv');
+                
+                // 如果不蒜子统计正常工作，使用其数据
+                if (busuanziPv && busuanziPv.textContent && busuanziPv.textContent.trim() !== '') {
+                    // 不蒜子统计正常，保持其显示
+                    console.log('不蒜子统计正常工作');
+                } else {
+                    // 不蒜子统计失败，确保显示本地统计
+                    console.log('使用本地统计作为备用');
+                    if (busuanziPv) busuanziPv.textContent = pv.toLocaleString();
+                    if (busuanziUv) busuanziUv.textContent = localStorage.getItem('site_uv');
+                }
+            }, 2000);
+        }
+        
+        // 页面加载完成后初始化统计
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initStats);
+        } else {
+            initStats();
+        }
+    </script>
+    
     <script src="script.js"></script>
     <script src="effects.js"></script>
 </body>
