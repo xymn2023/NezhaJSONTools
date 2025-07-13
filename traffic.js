@@ -1,6 +1,10 @@
 // Traffic monitoring page script
 
 document.addEventListener('DOMContentLoaded', function() {
+    // 确保主题已初始化
+    if (typeof initializeTheme === 'function') {
+        initializeTheme();
+    }
     initializeTraffic();
 });
 

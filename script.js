@@ -203,9 +203,8 @@ function initializeApp() {
     const now = new Date();
     document.getElementById('startDate').value = formatDateTimeLocal(now);
     
-    // 初始化主题
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(savedTheme);
+    // 初始化主题 - 自动检测浏览器主题
+    initializeTheme();
     
     // 初始化语言
     const savedLanguage = localStorage.getItem('language') || 'zh';
@@ -217,6 +216,32 @@ function initializeApp() {
     
     // 更新JSON代码
     updateJsonCode();
+}
+
+// 初始化主题 - 自动检测浏览器主题
+function initializeTheme() {
+    // 检查是否有保存的主题偏好
+    const savedTheme = localStorage.getItem('theme');
+    
+    if (savedTheme) {
+        // 如果有保存的主题，使用保存的主题
+        setTheme(savedTheme);
+    } else {
+        // 如果没有保存的主题，自动检测浏览器主题
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const autoTheme = prefersDark ? 'dark' : 'light';
+        setTheme(autoTheme);
+    }
+    
+    // 监听浏览器主题变化
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', (e) => {
+        // 只有在没有手动设置主题时才自动跟随浏览器主题
+        if (!localStorage.getItem('theme')) {
+            const newTheme = e.matches ? 'dark' : 'light';
+            setTheme(newTheme);
+        }
+    });
 }
 
 // 主题切换
@@ -232,6 +257,7 @@ function setTheme(theme) {
     const themeIcon = document.querySelector('.theme-toggle i');
     themeIcon.className = theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
     
+    // 保存主题到本地存储，表示用户已手动设置
     localStorage.setItem('theme', theme);
 }
 
@@ -1079,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', function() {
         messages: [
             {
                 role: 'system',
-                content: `你是 NezhaJsonTools 的AI助手，专门帮助用户生成和配置 Nezha 监控系统的 JSON 配置文件。
+                content: `你是 NezhaJsonTools 的AI助手，名叫"小哪吒"，专门帮助用户生成和配置 Nezha 监控系统的 JSON 配置文件。
 
 ## 核心原则
 当用户的需求不够明确时，你需要主动询问所需的具体信息，而不是猜测或提供通用示例。
