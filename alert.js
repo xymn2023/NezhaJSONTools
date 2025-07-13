@@ -1,10 +1,7 @@
 // Alert rules page script
 
 document.addEventListener('DOMContentLoaded', function() {
-    // 确保主题已初始化
-    if (typeof initializeTheme === 'function') {
-        initializeTheme();
-    }
+    // script.js已经包含了主题和性能模式的初始化
     updateAlertRule();
 });
 

@@ -2,6 +2,7 @@
 const state = {
     theme: 'light',
     language: 'zh',
+    performanceMode: false,
     config: {
         enableBilling: true,
         enablePlan: true,
@@ -16,15 +17,17 @@ const state = {
             bandwidth: '30Mbps',
             trafficVol: '1TB/Month',
             trafficType: '2',
-            IPv4: '1',
-            IPv6: '1',
-            networkRoute: '4837',
-            extra: 'Einstein'
-        }
-    },
-    tags: ['Einstein'],
+                    IPv4: '1',
+        IPv6: '1',
+        networkRoute: '4837',
+        extra: 'LAGSNES'
+    }
+},
+tags: ['LAGSNES'],
     isManualRefresh: false
 };
+
+
 
 // 国际化字典
 const i18n = {
@@ -193,16 +196,518 @@ const currencySymbols = {
 // 非官方周期列表
 const unofficialCycles = ['Day', 'Week', '2Year', '3Year', '4Year', '5Year', 'Permanent'];
 
+// 调试模式状态
+window.debugMode = {
+    isEnabled: false,
+    fpsCounter: 0,
+    lastTime: 0,
+    logs: [],
+    maxLogs: 50
+};
+
+// 全局AI状态管理
+window.aiState = {
+    isAIModeOn: false,
+    apiKey: 'sk-hxO4jnsBV3py5867GGfbmCqsFqNp97oHiC0zfyIycoJAcZrn',
+    apiBaseUrl: 'https://api.breathai.top/v1/chat/completions',
+    model: 'qwen3-14b',
+    messages: [
+        {
+            role: 'system',
+            content: `你是 NezhaJsonTools 的AI助手，名叫"小哪吒"，专门帮助用户生成和配置 Nezha 监控系统的 JSON 配置文件。
+
+## 核心原则
+当用户的需求不够明确时，你需要主动询问所需的具体信息，而不是猜测或提供通用示例。
+
+## 配置结构说明
+
+### 账单配置 (billingDataMod)
+- **startDate**: 计费起始日期 (ISO 8601格式)
+- **endDate**: 计费结束日期 (ISO 8601格式) 
+- **autoRenewal**: 自动续费 ("1"=开启, "0"=关闭)
+- **cycle**: 计费周期 (Day/Week/Month/Quarter/HalfYear/Year/2Year/3Year/4Year/5Year/Permanent)
+- **amount**: 金额 (格式: "200EUR", "50USD", 免费用"0", 按量收费用"-1")
+
+### 套餐配置 (planDataMod)
+- **bandwidth**: 带宽 ("30Mbps", "1Gbps", "Unlimited")
+- **trafficVol**: 流量配额 ("1TB/Month", "500GB/Day", "Unlimited")
+- **trafficType**: 流量类型 ("1"=入站, "2"=双向)
+- **IPv4**: IPv4地址数量 (数字)
+- **IPv6**: IPv6地址数量 (数字)
+- **networkRoute**: AS号码 (如 "4837")
+- **extra**: 额外标签/备注信息
+
+### 流量监控规则 (trafficRules)
+- **type**: transfer_in_cycle / transfer_out_cycle / transfer_all_cycle
+- **cycle_start**: 周期开始时间 (RFC3339)
+- **cycle_interval**: 周期数量
+- **cycle_unit**: hour/day/week/month/year
+- **min** / **max**: 流量阈值
+- **cover**: 1 覆盖, 0 追加
+- **ignore**: 忽略的服务器ID列表
+
+示例:
+\`\`\`json
+[
+  {
+    "type": "transfer_out_cycle",
+    "max": 1099511627776,
+    "cycle_start": "2022-01-01T00:00:00+08:00",
+    "cycle_interval": 1,
+    "cycle_unit": "month",
+    "cover": 1,
+    "ignore": {"3": true, "4": true}
+  }
+]
+\`\`\`
+
+### 警报规则 (alertRules)
+- **type**: cpu/gpu/memory/swap/disk/net_in_speed/net_out_speed/net_all_speed/transfer_in/transfer_out/transfer_all/offline/load1/load5/load15/process_count/tcp_conn_count/udp_conn_count/temperature_max
+- **duration**: 持续时间(秒)，30% 以上时间触发阈值才会通知
+- **min** / **max**: 数值阈值，流量和网速单位为字节，其余使用百分比
+- **cover**: 1 忽略所有服务器，0 监控所有服务器
+- **ignore**: {服务器ID: true/false}
+
+示例:
+\`\`\`json
+[{"type": "offline", "duration": 10}]
+\`\`\`
+
+
+## 交互指南
+**当用户请求不明确时，你应该这样询问：**
+
+🔍 **如果用户只说"帮我生成配置"：**
+请告诉我：
+1. 计费信息：价格多少？什么货币？什么周期？
+2. 套餐信息：带宽多少？流量配额多少？
+3. 其他需求：需要几个IP？有特殊标签吗？
+
+🔍 **如果用户只说"我要一个VPS配置"：**
+请提供以下信息：
+- 价格和计费周期（如：年付200欧元）
+- 带宽要求（如：30Mbps）
+- 流量配额（如：每月1TB）
+- 是否需要自动续费？
+
+🔍 **如果用户说"便宜的配置"：**
+请具体说明：
+- 你的预算范围？
+- 需要什么规格（带宽、流量）？
+- 偏好什么计费周期？
+
+## 输出格式
+确认所有信息后，使用以下格式输出：
+
+\`\`\`json
+{
+  "billingDataMod": {
+    "startDate": "2024-12-08T12:58:17.636Z",
+    "endDate": "2025-12-08T12:58:17.636Z",
+    "autoRenewal": "1",
+    "cycle": "Year", 
+    "amount": "200EUR"
+  },
+  "planDataMod": {
+    "bandwidth": "30Mbps",
+    "trafficVol": "1TB/Month",
+    "trafficType": "2",
+    "IPv4": "1", 
+    "IPv6": "1",
+    "networkRoute": "4837",
+    "extra": "LAGSNES"
+    }
+    `
+        }
+    ], // 存储对话历史
+    currentStreamController: null,
+    timerInterval: null,
+    // 高级参数
+    temperature: 0.6,
+    top_p: 0.95,
+    top_k: 20,
+    min_p: 0.00,
+    frequency_penalty: 0.0
+};
+
+// 全局AI切换函数
+function toggleAIMode(force = null) {
+    console.log('=== AI DEBUG START ===');
+    console.log('toggleAIMode called, force:', force);
+    console.log('window.aiState exists:', !!window.aiState);
+    console.log('Current AI state:', window.aiState);
+    
+    if (force !== null) {
+        window.aiState.isAIModeOn = force;
+    } else {
+        window.aiState.isAIModeOn = !window.aiState.isAIModeOn;
+    }
+    
+    console.log('AI mode is now:', window.aiState.isAIModeOn);
+    
+    const aiModeBtn = document.getElementById('aiModeBtn');
+    const settingsView = document.getElementById('settings-view');
+    const aiChatView = document.getElementById('ai-chat-view');
+    
+    console.log('Found elements:', {
+        aiModeBtn: !!aiModeBtn,
+        settingsView: !!settingsView,
+        aiChatView: !!aiChatView
+    });
+    
+    if (aiModeBtn) {
+        console.log('AI button found, updating...');
+        aiModeBtn.classList.toggle('ai-mode-on', window.aiState.isAIModeOn);
+        const btnText = aiModeBtn.querySelector('span');
+        const btnIcon = aiModeBtn.querySelector('i');
+        
+        console.log('Button elements:', {
+            btnText: !!btnText,
+            btnIcon: !!btnIcon
+        });
+
+        if (window.aiState.isAIModeOn) {
+            btnText.textContent = '退出 AI';
+            btnIcon.className = 'fas fa-power-off';
+            console.log('AI mode ON - button updated');
+        } else {
+            btnText.textContent = '使用 AI 生成 JSON';
+            btnIcon.className = 'fas fa-flask';
+            console.log('AI mode OFF - button updated');
+        }
+    } else {
+        console.error('AI button not found!');
+    }
+
+    // 处理视图切换
+    if (aiChatView) {
+        if (window.aiState.isAIModeOn) {
+            aiChatView.style.display = 'flex';
+            console.log('AI chat view shown');
+            // 只在主页面且移动端隐藏设置界面
+            if (settingsView && window.innerWidth <= 768) {
+                settingsView.style.display = 'none';
+                console.log('Settings view hidden on mobile');
+            }
+        } else {
+            aiChatView.style.display = 'none';
+            console.log('AI chat view hidden');
+            // 只在主页面恢复设置界面
+            if (settingsView) {
+                settingsView.style.display = 'grid';
+                console.log('Settings view restored');
+            }
+        }
+    } else {
+        console.log('AI chat view not found');
+    }
+    
+    console.log('=== AI DEBUG END ===');
+}
+
+// 全局AI初始化函数
+function initializeAI() {
+    console.log('=== AI INITIALIZATION START ===');
+    console.log('initializeAI called');
+    console.log('Current page:', window.location.pathname);
+    console.log('window.aiState exists:', !!window.aiState);
+    
+    const aiModeBtn = document.getElementById('aiModeBtn');
+    const aiCloseBtn = document.getElementById('aiCloseBtn');
+    const mobileCloseBtn = document.getElementById('mobileCloseBtn');
+    
+    console.log('Found elements:', { 
+        aiModeBtn: !!aiModeBtn, 
+        aiCloseBtn: !!aiCloseBtn, 
+        mobileCloseBtn: !!mobileCloseBtn 
+    });
+    
+    if (aiModeBtn) {
+        console.log('AI button found');
+        console.log('AI button HTML:', aiModeBtn.outerHTML);
+        console.log('Button has onclick:', !!aiModeBtn.onclick);
+        console.log('Button disabled:', aiModeBtn.disabled);
+        console.log('Button style pointer-events:', getComputedStyle(aiModeBtn).pointerEvents);
+    } else {
+        console.error('AI button not found!');
+    }
+    
+    if (aiCloseBtn) {
+        console.log('AI close button found');
+        aiCloseBtn.addEventListener('click', function(e) {
+            console.log('AI close button clicked');
+            e.preventDefault();
+            toggleAIMode(false);
+        });
+    }
+    
+    if (mobileCloseBtn) {
+        console.log('Mobile close button found');
+        mobileCloseBtn.addEventListener('click', function(e) {
+            console.log('Mobile close button clicked');
+            e.preventDefault();
+            toggleAIMode(false);
+        });
+    }
+    
+    console.log('=== AI INITIALIZATION END ===');
+}
+
+// 调试模式函数
+function toggleDebugMode() {
+    window.debugMode.isEnabled = !window.debugMode.isEnabled;
+    const debugWindow = document.getElementById('debugWindow');
+    
+    if (window.debugMode.isEnabled) {
+        debugWindow.style.display = 'block';
+        startDebugMode();
+        addDebugLog('调试模式已开启', 'info');
+    } else {
+        debugWindow.style.display = 'none';
+        stopDebugMode();
+        addDebugLog('调试模式已关闭', 'info');
+    }
+}
+
+function startDebugMode() {
+    // 开始FPS监控
+    window.debugMode.lastTime = performance.now();
+    requestAnimationFrame(updateFPS);
+    
+    // 开始定期更新调试信息
+    window.debugMode.updateInterval = setInterval(updateDebugInfo, 1000);
+    
+    // 重写console.log来捕获日志
+    if (!window.debugMode.originalConsoleLog) {
+        window.debugMode.originalConsoleLog = console.log;
+        window.debugMode.originalConsoleWarn = console.warn;
+        window.debugMode.originalConsoleError = console.error;
+        
+        console.log = function(...args) {
+            window.debugMode.originalConsoleLog.apply(console, args);
+            addDebugLog(args.join(' '), 'info');
+        };
+        
+        console.warn = function(...args) {
+            window.debugMode.originalConsoleWarn.apply(console, args);
+            addDebugLog(args.join(' '), 'warn');
+        };
+        
+        console.error = function(...args) {
+            window.debugMode.originalConsoleError.apply(console, args);
+            addDebugLog(args.join(' '), 'error');
+        };
+    }
+}
+
+function stopDebugMode() {
+    // 停止FPS监控
+    if (window.debugMode.updateInterval) {
+        clearInterval(window.debugMode.updateInterval);
+    }
+    
+    // 恢复原始console函数
+    if (window.debugMode.originalConsoleLog) {
+        console.log = window.debugMode.originalConsoleLog;
+        console.warn = window.debugMode.originalConsoleWarn;
+        console.error = window.debugMode.originalConsoleError;
+        window.debugMode.originalConsoleLog = null;
+    }
+}
+
+function updateFPS() {
+    if (!window.debugMode.isEnabled) return;
+    
+    const currentTime = performance.now();
+    const deltaTime = currentTime - window.debugMode.lastTime;
+    window.debugMode.lastTime = currentTime;
+    
+    if (deltaTime > 0) {
+        window.debugMode.fpsCounter = Math.round(1000 / deltaTime);
+    }
+    
+    requestAnimationFrame(updateFPS);
+}
+
+function updateDebugInfo() {
+    if (!window.debugMode.isEnabled) return;
+    
+    // 更新FPS
+    const fpsElement = document.getElementById('debugFPS');
+    if (fpsElement) {
+        fpsElement.textContent = window.debugMode.fpsCounter;
+    }
+    
+    // 更新内存信息
+    const memoryElement = document.getElementById('debugMemory');
+    if (memoryElement && performance.memory) {
+        const memory = performance.memory;
+        const usedMB = Math.round(memory.usedJSHeapSize / 1024 / 1024);
+        const totalMB = Math.round(memory.totalJSHeapSize / 1024 / 1024);
+        memoryElement.textContent = `${usedMB}MB / ${totalMB}MB`;
+    }
+    
+    // 更新页面信息
+    const pageElement = document.getElementById('debugPage');
+    if (pageElement) {
+        pageElement.textContent = window.location.pathname.split('/').pop() || 'index.html';
+    }
+    
+    // 更新主题信息
+    const themeElement = document.getElementById('debugTheme');
+    if (themeElement) {
+        themeElement.textContent = state.theme;
+    }
+    
+    // 更新AI状态
+    const aiElement = document.getElementById('debugAI');
+    if (aiElement) {
+        aiElement.textContent = window.aiState ? (window.aiState.isAIModeOn ? '开启' : '关闭') : '未初始化';
+    }
+    
+    // 更新性能模式状态
+    const performanceElement = document.getElementById('debugPerformance');
+    if (performanceElement) {
+        performanceElement.textContent = state.performanceMode ? '开启' : '关闭';
+    }
+}
+
+function addDebugLog(message, type = 'info') {
+    if (!window.debugMode.isEnabled) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = {
+        time: timestamp,
+        message: message,
+        type: type
+    };
+    
+    window.debugMode.logs.push(logEntry);
+    
+    // 限制日志数量
+    if (window.debugMode.logs.length > window.debugMode.maxLogs) {
+        window.debugMode.logs.shift();
+    }
+    
+    // 更新日志显示
+    updateDebugLogs();
+}
+
+function updateDebugLogs() {
+    const logsElement = document.getElementById('debugLogs');
+    if (!logsElement) return;
+    
+    logsElement.innerHTML = '';
+    
+    window.debugMode.logs.slice(-10).forEach(log => {
+        const logDiv = document.createElement('div');
+        logDiv.className = `log-entry log-${log.type}`;
+        logDiv.textContent = `[${log.time}] ${log.message}`;
+        logsElement.appendChild(logDiv);
+    });
+    
+    logsElement.scrollTop = logsElement.scrollHeight;
+}
+
+// 调试窗口拖拽功能
+function initDebugWindowDrag() {
+    const debugWindow = document.getElementById('debugWindow');
+    const debugHeader = debugWindow.querySelector('.debug-header');
+    
+    let isDragging = false;
+    let startX, startY, startLeft, startTop;
+    
+    debugHeader.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = parseInt(debugWindow.style.left) || 0;
+        startTop = parseInt(debugWindow.style.top) || 0;
+        
+        debugWindow.style.cursor = 'grabbing';
+        
+        // 在性能模式下使用更简单的拖拽逻辑
+        if (state.performanceMode) {
+            debugWindow.style.transition = 'none';
+        }
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+        
+        // 在性能模式下使用requestAnimationFrame来优化拖拽性能
+        if (state.performanceMode) {
+            requestAnimationFrame(() => {
+                debugWindow.style.left = (startLeft + deltaX) + 'px';
+                debugWindow.style.top = (startTop + deltaY) + 'px';
+            });
+        } else {
+            debugWindow.style.left = (startLeft + deltaX) + 'px';
+            debugWindow.style.top = (startTop + deltaY) + 'px';
+        }
+    });
+    
+    document.addEventListener('mouseup', function() {
+        if (isDragging) {
+            isDragging = false;
+            debugWindow.style.cursor = 'move';
+            
+            // 恢复过渡效果（如果不在性能模式）
+            if (!state.performanceMode) {
+                debugWindow.style.transition = '';
+            }
+        }
+    });
+    
+    // 防止拖拽时选中文本
+    debugHeader.addEventListener('selectstart', function(e) {
+        e.preventDefault();
+    });
+}
+
 // 初始化应用
 document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
+    console.log('=== DOM CONTENT LOADED ===');
+    console.log('Document ready, starting initialization...');
+    console.log('Current URL:', window.location.href);
+    console.log('Document title:', document.title);
+    
+    try {
+        console.log('Calling initializeApp...');
+        initializeApp();
+        console.log('initializeApp completed');
+        
+        console.log('Calling initializeAI...');
+        initializeAI();
+        console.log('initializeAI completed');
+        
+        // 验证AI按钮是否存在
+        setTimeout(() => {
+            const aiBtn = document.getElementById('aiModeBtn');
+            console.log('=== POST-INITIALIZATION CHECK ===');
+            console.log('AI button exists after init:', !!aiBtn);
+            if (aiBtn) {
+                console.log('AI button is visible:', aiBtn.offsetParent !== null);
+                console.log('AI button is clickable:', !aiBtn.disabled && getComputedStyle(aiBtn).pointerEvents !== 'none');
+                console.log('AI button final HTML:', aiBtn.outerHTML);
+            }
+        }, 100);
+        
+        // 初始化调试窗口拖拽功能
+        initDebugWindowDrag();
+        
+    } catch (error) {
+        console.error('Error during initialization:', error);
+    }
+    
+    console.log('=== DOM CONTENT LOADED END ===');
 });
 
 function initializeApp() {
-    // 设置初始日期
-    const now = new Date();
-    document.getElementById('startDate').value = formatDateTimeLocal(now);
-    
     // 初始化主题 - 自动检测浏览器主题
     initializeTheme();
     
@@ -210,12 +715,29 @@ function initializeApp() {
     const savedLanguage = localStorage.getItem('language') || 'zh';
     setLanguage(savedLanguage);
     
-    // 初始化配置
-    updateBilling();
-    updatePlan();
+    // 初始化性能模式
+    initializePerformanceMode();
     
-    // 更新JSON代码
-    updateJsonCode();
+    // 检查当前页面并初始化相应的功能
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    
+    if (currentPage === 'index.html') {
+        // 主页面初始化
+        const now = new Date();
+        const startDateElement = document.getElementById('startDate');
+        if (startDateElement) {
+            startDateElement.value = formatDateTimeLocal(now);
+        }
+        
+        // 初始化配置
+        if (typeof updateBilling === 'function') updateBilling();
+        if (typeof updatePlan === 'function') updatePlan();
+        if (typeof updateJsonCode === 'function') updateJsonCode();
+        
+        // 初始化标签
+        if (typeof renderTags === 'function') renderTags();
+    }
+    // traffic.html 和 alert.html 的初始化由各自的脚本处理
 }
 
 // 初始化主题 - 自动检测浏览器主题
@@ -287,6 +809,76 @@ function setLanguage(language) {
     
     localStorage.setItem('language', language);
     updateJsonCode();
+}
+
+// 性能模式相关函数
+function initializePerformanceMode() {
+    const savedPerformanceMode = localStorage.getItem('performanceMode') === 'true';
+    setPerformanceMode(savedPerformanceMode);
+}
+
+function togglePerformanceMode() {
+    const newMode = !state.performanceMode;
+    setPerformanceMode(newMode);
+}
+
+function setPerformanceMode(enabled) {
+    state.performanceMode = enabled;
+    
+    const performanceBtn = document.getElementById('performanceToggle');
+    const body = document.body;
+    
+    if (enabled) {
+        body.classList.add('performance-mode');
+        performanceBtn.classList.add('performance-mode-on');
+        performanceBtn.title = '关闭性能模式';
+        localStorage.setItem('performanceMode', 'true');
+        
+        // 强制停止所有动画
+        const allElements = document.querySelectorAll('*');
+        allElements.forEach(element => {
+            if (element.style.animation) {
+                element.style.animation = 'none';
+            }
+            if (element.style.transition) {
+                element.style.transition = 'none';
+            }
+        });
+        
+        // 显示提示
+        showToast('性能模式已开启 - 特效已关闭');
+        
+        // 添加调试日志
+        if (window.debugMode && window.debugMode.isEnabled) {
+            addDebugLog('性能模式已开启，所有动画已停止', 'info');
+        }
+    } else {
+        body.classList.remove('performance-mode');
+        performanceBtn.classList.remove('performance-mode-on');
+        performanceBtn.title = '开启性能模式';
+        localStorage.setItem('performanceMode', 'false');
+        
+        // 恢复动画（延迟执行以确保CSS类已移除）
+        setTimeout(() => {
+            const allElements = document.querySelectorAll('*');
+            allElements.forEach(element => {
+                if (element.style.animation === 'none') {
+                    element.style.animation = '';
+                }
+                if (element.style.transition === 'none') {
+                    element.style.transition = '';
+                }
+            });
+        }, 50);
+        
+        // 显示提示
+        showToast('性能模式已关闭 - 特效已恢复');
+        
+        // 添加调试日志
+        if (window.debugMode && window.debugMode.isEnabled) {
+            addDebugLog('性能模式已关闭，动画已恢复', 'info');
+        }
+    }
 }
 
 function __(key, params = {}) {
@@ -417,13 +1009,41 @@ function updateBilling() {
         state.config.billingDataMod.autoRenewal = autoRenewal ? '1' : '0';
     }
     
-    // 更新配置
-    state.config.billingDataMod.startDate = new Date(startDate).toISOString();
+    // 更新配置 - 添加日期验证
+    try {
+        const startDateObj = new Date(startDate);
+        if (isNaN(startDateObj.getTime())) {
+            // 如果日期无效，使用当前时间
+            state.config.billingDataMod.startDate = new Date().toISOString();
+        } else {
+            state.config.billingDataMod.startDate = startDateObj.toISOString();
+        }
+    } catch (error) {
+        console.warn('Invalid start date, using current time:', error);
+        state.config.billingDataMod.startDate = new Date().toISOString();
+    }
     
     if (cycle === 'Permanent') {
         state.config.billingDataMod.endDate = '0000-00-00T23:59:59+08:00';
     } else {
-        state.config.billingDataMod.endDate = new Date(endDateInput.value).toISOString();
+        try {
+            const endDateObj = new Date(endDateInput.value);
+            if (isNaN(endDateObj.getTime())) {
+                // 如果结束日期无效，使用开始日期加一年
+                const startDateObj = new Date(startDate);
+                if (!isNaN(startDateObj.getTime())) {
+                    startDateObj.setFullYear(startDateObj.getFullYear() + 1);
+                    state.config.billingDataMod.endDate = startDateObj.toISOString();
+                } else {
+                    state.config.billingDataMod.endDate = new Date().toISOString();
+                }
+            } else {
+                state.config.billingDataMod.endDate = endDateObj.toISOString();
+            }
+        } catch (error) {
+            console.warn('Invalid end date, using fallback:', error);
+            state.config.billingDataMod.endDate = new Date().toISOString();
+        }
     }
     
     state.config.billingDataMod.cycle = getCycleValue();
@@ -1097,129 +1717,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.body.classList.contains('ai-chat-initialized')) return;
     document.body.classList.add('ai-chat-initialized');
 
-    const aiState = {
-        isAIModeOn: false,
-        apiKey: 'sk-hxO4jnsBV3py5867GGfbmCqsFqNp97oHiC0zfyIycoJAcZrn',
-        apiBaseUrl: 'https://api.breathai.top/v1/chat/completions',
-        model: 'qwen3-14b',
-        messages: [
-            {
-                role: 'system',
-                content: `你是 NezhaJsonTools 的AI助手，名叫"小哪吒"，专门帮助用户生成和配置 Nezha 监控系统的 JSON 配置文件。
-
-## 核心原则
-当用户的需求不够明确时，你需要主动询问所需的具体信息，而不是猜测或提供通用示例。
-
-## 配置结构说明
-
-### 账单配置 (billingDataMod)
-- **startDate**: 计费起始日期 (ISO 8601格式)
-- **endDate**: 计费结束日期 (ISO 8601格式) 
-- **autoRenewal**: 自动续费 ("1"=开启, "0"=关闭)
-- **cycle**: 计费周期 (Day/Week/Month/Quarter/HalfYear/Year/2Year/3Year/4Year/5Year/Permanent)
-- **amount**: 金额 (格式: "200EUR", "50USD", 免费用"0", 按量收费用"-1")
-
-### 套餐配置 (planDataMod)
-- **bandwidth**: 带宽 ("30Mbps", "1Gbps", "Unlimited")
-- **trafficVol**: 流量配额 ("1TB/Month", "500GB/Day", "Unlimited")
-- **trafficType**: 流量类型 ("1"=入站, "2"=双向)
-- **IPv4**: IPv4地址数量 (数字)
-- **IPv6**: IPv6地址数量 (数字)
-- **networkRoute**: AS号码 (如 "4837")
-- **extra**: 额外标签/备注信息
-
-### 流量监控规则 (trafficRules)
-- **type**: transfer_in_cycle / transfer_out_cycle / transfer_all_cycle
-- **cycle_start**: 周期开始时间 (RFC3339)
-- **cycle_interval**: 周期数量
-- **cycle_unit**: hour/day/week/month/year
-- **min** / **max**: 流量阈值
-- **cover**: 1 覆盖, 0 追加
-- **ignore**: 忽略的服务器ID列表
-
-示例:
-\`\`\`json
-[
-  {
-    "type": "transfer_out_cycle",
-    "max": 1099511627776,
-    "cycle_start": "2022-01-01T00:00:00+08:00",
-    "cycle_interval": 1,
-    "cycle_unit": "month",
-    "cover": 1,
-    "ignore": {"3": true, "4": true}
-  }
-]
-\`\`\`
-
-### 警报规则 (alertRules)
-- **type**: cpu/gpu/memory/swap/disk/net_in_speed/net_out_speed/net_all_speed/transfer_in/transfer_out/transfer_all/offline/load1/load5/load15/process_count/tcp_conn_count/udp_conn_count/temperature_max
-- **duration**: 持续时间(秒)，30% 以上时间触发阈值才会通知
-- **min** / **max**: 数值阈值，流量和网速单位为字节，其余使用百分比
-- **cover**: 1 忽略所有服务器，0 监控所有服务器
-- **ignore**: {服务器ID: true/false}
-
-示例:
-\`\`\`json
-[{"type": "offline", "duration": 10}]
-\`\`\`
-
-
-## 交互指南
-**当用户请求不明确时，你应该这样询问：**
-
-🔍 **如果用户只说"帮我生成配置"：**
-请告诉我：
-1. 计费信息：价格多少？什么货币？什么周期？
-2. 套餐信息：带宽多少？流量配额多少？
-3. 其他需求：需要几个IP？有特殊标签吗？
-
-🔍 **如果用户只说"我要一个VPS配置"：**
-请提供以下信息：
-- 价格和计费周期（如：年付200欧元）
-- 带宽要求（如：30Mbps）
-- 流量配额（如：每月1TB）
-- 是否需要自动续费？
-
-🔍 **如果用户说"便宜的配置"：**
-请具体说明：
-- 你的预算范围？
-- 需要什么规格（带宽、流量）？
-- 偏好什么计费周期？
-
-## 输出格式
-确认所有信息后，使用以下格式输出：
-
-\`\`\`json
-{
-  "billingDataMod": {
-    "startDate": "2024-12-08T12:58:17.636Z",
-    "endDate": "2025-12-08T12:58:17.636Z",
-    "autoRenewal": "1",
-    "cycle": "Year", 
-    "amount": "200EUR"
-  },
-  "planDataMod": {
-    "bandwidth": "30Mbps",
-    "trafficVol": "1TB/Month",
-    "trafficType": "2",
-    "IPv4": "1", 
-    "IPv6": "1",
-    "networkRoute": "4837",
-    "extra": "LAGSNES"
-    }
-    `
-            }
-        ], // 存储对话历史
-        currentStreamController: null,
-        timerInterval: null,
-        // 高级参数
-        temperature: 0.6,
-        top_p: 0.95,
-        top_k: 20,
-        min_p: 0.00,
-        frequency_penalty: 0.0
-    };
+    // AI状态现在在全局初始化中定义
+    const aiState = window.aiState;
 
     const aiModeBtn = document.getElementById('aiModeBtn');
     const sendMessageBtn = document.getElementById('sendMessageBtn');
@@ -1240,41 +1739,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let isDragging = false;
     let dragOffset = { x: 0, y: 0 };
 
-    // 切换AI模式
-    function toggleAIMode(force = null) {
-        if (force !== null) {
-            aiState.isAIModeOn = force;
-        } else {
-            aiState.isAIModeOn = !aiState.isAIModeOn;
-        }
-        
-        aiModeBtn.classList.toggle('ai-mode-on', aiState.isAIModeOn);
-        const btnText = aiModeBtn.querySelector('span');
-        const btnIcon = aiModeBtn.querySelector('i');
+    // AI模式切换现在在全局作用域中定义
 
-        if (aiState.isAIModeOn) {
-            btnText.textContent = '退出 AI';
-            btnIcon.className = 'fas fa-power-off';
-            
-            // 只在移动端隐藏设置界面
-            if (window.innerWidth <= 768 && settingsView) {
-                settingsView.style.display = 'none';
-            }
-            aiChatView.style.display = 'flex';
-        } else {
-            btnText.textContent = '使用 AI 生成 JSON';
-            btnIcon.className = 'fas fa-flask';
-            if (settingsView) {
-                settingsView.style.display = 'grid';
-            }
-            aiChatView.style.display = 'none';
-        }
-    }
-    window.toggleAIMode = toggleAIMode;
-
-    aiModeBtn.addEventListener('click', () => toggleAIMode());
-    aiCloseBtn.addEventListener('click', () => toggleAIMode(false));
-    mobileCloseBtn.addEventListener('click', () => toggleAIMode(false));
+    // 事件监听器现在在全局initializeAI函数中处理
     
 
     
@@ -1331,6 +1798,7 @@ document.addEventListener('DOMContentLoaded', function() {
     clearContextBtn.addEventListener('click', clearChat);
 
     function clearChat() {
+        const aiState = window.aiState;
         chatBox.innerHTML = '';
         // 保留系统提示词，只清除用户对话
         aiState.messages = aiState.messages.filter(msg => msg.role === 'system');
@@ -1503,6 +1971,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     async function sendMessage() {
+        const aiState = window.aiState;
         const userInput = chatInput.value.trim();
         if (!userInput) return;
 
@@ -1622,6 +2091,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function startTimer(bubble) {
+        const aiState = window.aiState;
         const startTime = bubble.dataset.startTime;
         const timerElement = bubble.timerElement;
         
@@ -1636,9 +2106,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function stopTimer() {
+        const aiState = window.aiState;
         if (aiState.timerInterval) {
             clearInterval(aiState.timerInterval);
             aiState.timerInterval = null;
         }
     }
-}); 
+});
+
+ 

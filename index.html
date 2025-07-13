@@ -13,12 +13,15 @@
             <div class="header-top">
                 <h1><i class="fas fa-server"></i> NezhaJsonTools</h1>
                 <div class="header-controls">
-                    <button class="ai-btn" id="aiModeBtn">
+                    <button class="ai-btn" id="aiModeBtn" onclick="toggleAIMode()">
                         <i class="fas fa-flask"></i>
                         <span>使用 AI 生成 JSON</span>
                     </button>
+                    <button class="performance-toggle" id="performanceToggle" onclick="togglePerformanceMode()" title="开启性能模式">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </button>
                     <button class="theme-toggle" onclick="toggleTheme()">
-                        <i class="fas fa-sun"></i>
+                        <i class="fas fa-moon"></i>
                     </button>
                     <button class="language-toggle" onclick="toggleLanguage()">
                         <span id="lang-indicator">English</span>
@@ -298,6 +301,38 @@
         <span></span>
     </div>
 
+    <!-- 调试窗口 -->
+    <div id="debugWindow" class="debug-window" style="display: none;">
+        <div class="debug-header">
+            <span>调试信息</span>
+            <button class="debug-close" onclick="toggleDebugMode()">×</button>
+        </div>
+        <div class="debug-content">
+            <div class="debug-section">
+                <strong>FPS:</strong> <span id="debugFPS">--</span>
+            </div>
+            <div class="debug-section">
+                <strong>内存:</strong> <span id="debugMemory">--</span>
+            </div>
+            <div class="debug-section">
+                <strong>页面:</strong> <span id="debugPage">--</span>
+            </div>
+            <div class="debug-section">
+                <strong>主题:</strong> <span id="debugTheme">--</span>
+            </div>
+            <div class="debug-section">
+                <strong>AI状态:</strong> <span id="debugAI">--</span>
+            </div>
+            <div class="debug-section">
+                <strong>性能模式:</strong> <span id="debugPerformance">--</span>
+            </div>
+            <div class="debug-section">
+                <strong>日志:</strong>
+                <div id="debugLogs" class="debug-logs"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- 页脚 -->
     <footer class="main-footer">
         <div class="footer-content">
@@ -318,6 +353,9 @@
                 <p><a href="test-theme.html" class="dev-test-btn">
                     <i class="fas fa-flask"></i> 开发者测试功能
                 </a></p>
+                <p><button class="dev-test-btn" onclick="toggleDebugMode()">
+                    <i class="fas fa-bug"></i> 调试模式
+                </button></p>
             </div>
         </div>
     </footer>
