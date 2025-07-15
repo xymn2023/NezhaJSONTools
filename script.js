@@ -2,7 +2,7 @@
 const state = {
     theme: 'light',
     language: 'zh',
-    performanceMode: false,
+    performanceMode: localStorage.getItem('performanceMode') === null ? false : localStorage.getItem('performanceMode') === 'true',
     config: {
         enableBilling: true,
         enablePlan: true,
@@ -822,13 +822,13 @@ function togglePerformanceMode() {
     setPerformanceMode(newMode);
 }
 
-function setPerformanceMode(enabled) {
-    state.performanceMode = enabled;
+function setPerformanceMode(mode) {
+    state.performanceMode = mode;
     
     const performanceBtn = document.getElementById('performanceToggle');
     const body = document.body;
     
-    if (enabled) {
+    if (mode) {
         body.classList.add('performance-mode');
         performanceBtn.classList.add('performance-mode-on');
         performanceBtn.title = '关闭性能模式';
@@ -852,6 +852,9 @@ function setPerformanceMode(enabled) {
         if (window.debugMode && window.debugMode.isEnabled) {
             addDebugLog('性能模式已开启，所有动画已停止', 'info');
         }
+        
+        // 保存
+        localStorage.setItem('performanceMode', 'true');
     } else {
         body.classList.remove('performance-mode');
         performanceBtn.classList.remove('performance-mode-on');
@@ -878,6 +881,9 @@ function setPerformanceMode(enabled) {
         if (window.debugMode && window.debugMode.isEnabled) {
             addDebugLog('性能模式已关闭，动画已恢复', 'info');
         }
+
+        // 保存
+        localStorage.setItem('performanceMode', 'false');
     }
 }
 
