@@ -1,7 +1,7 @@
 # NezhaJsonTools
 
 一个为 Nezha 监控系统设计的现代化 JSON 配置生成工具，提供直观的用户界面来生成和编辑 Nezha 的公开备注 JSON 配置。  
-[立刻体验](https://nezhajsontools.pages.dev)
+[立刻体验](https://nzjson-bh3.pages.dev/)
 
 ---
 
